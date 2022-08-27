@@ -105,7 +105,7 @@ def assume_role(account_id, role_name):
     Assume a role with adequate permissions
     """
 
-    role_arn = "arn:aws:iam::{}:role/{}".format(account_id, role_name)
+    role_arn = f"arn:aws:iam::{account_id}:role/{role_name}"
 
     try:
         sts_client = boto3.client("sts")
@@ -115,16 +115,10 @@ def assume_role(account_id, role_name):
         )
 
         print(
-            "Successfully assumed role: {} for AWS account: {}".format(
-                role_name, account_id
-            )
-        )
+            f"Successfully assumed role: {role_name} for AWS account: {account_id}")
     except botocore.exceptions.ClientError as error:
         print(
-            "An error occurred when trying to assume role: {} for this account".format(
-                role_name
-            )
-        )
+            f"An error occurred when trying to assume role: {role_name} for this account")
         raise error
 
     sts_session = boto3.Session(
@@ -165,10 +159,7 @@ def az_map_account(account_id, iam_role, regions):
             ]
         except botocore.exceptions.ClientError as error:
             print(
-                "An error occurred attempting to retrieve availability zones. Error: {}".format(
-                    error
-                )
-            )
+                f"An error occurred attempting to retrieve availability zones. Error: {error}")
 
         for zone in response:
             zone_dict[zone["ZoneName"]] = zone["ZoneId"]
@@ -182,10 +173,10 @@ def create_output_file(map_data):
     """Generate output files containing the mapping data."""
     timestamp = datetime.now()
 
-    filename = "output/aws-az-map-{}.json".format(timestamp)
+    filename = f"output/aws-az-map-{timestamp}.json"
     os.makedirs(os.path.dirname(filename), exist_ok=True)
 
-    with open(filename, "w") as file:
+    with open(filename, "w", encoding="utf8") as file:
         json.dump(map_data, file)
 
     return filename
@@ -203,15 +194,15 @@ def main():
     complete_map["Accounts"] = []
 
     for account in accounts_map:
-        print("Beginning mapping for AWS account id: {}...".format(account))
+        print(f"Beginning mapping for AWS account id: {account}...")
 
         account_map = az_map_account(account, role_to_assume, region_map)
         complete_map["Accounts"].append(account_map)
-        print("Successfully mapped AWS account id: {}".format(account))
+        print(f"Successfully mapped AWS account id: {account}")
 
     print("Generating final output file...")
     file = create_output_file(complete_map)
-    print("File: {} has been created with the mapping data.".format(file))
+    print(f"File: {file} has been created with the mapping data.")
 
     print("Availability Zone Mapper has completed, exiting.")
 
