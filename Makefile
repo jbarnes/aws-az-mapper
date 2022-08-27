@@ -6,4 +6,4 @@ deps:
 
 map:
 	$(info [+] Starting Availability Zone mapping tool)
-	@python3 az_mapper.py
+	@python3 src/az_mapper.py
