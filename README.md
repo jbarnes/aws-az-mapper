@@ -2,6 +2,10 @@
 
 Availability Zone Mapper - Maps physical availability zones to an AWS accounts logical availability zones
 
+## Code status
+
+![pylint status](https://github.com/jbarnes/az-mapper/actions/workflows/pylint.yml/badge.svg)
+
 ## Basic commands
 
 * Run `make deps` to install Python dependencies
