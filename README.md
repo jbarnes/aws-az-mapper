@@ -1,161 +1,119 @@
 # AWS Availability Zone Mapper
 
-Availability Zone Mapper - Maps physical availability zones to an AWS accounts logical availability zones
+Maps AWS logical availability zones to physical zone IDs for the currently authenticated account.
 
 ## Code status
 
 ![pylint status](https://github.com/jbarnes/az-mapper/actions/workflows/pylint.yml/badge.svg)
 
-## Basic commands
+## Overview
 
-* Run `make deps` to install Python dependencies
-* Run `make map` to run the Availability Zone mapping tool
+AWS uses logical AZ names (like `us-east-1a`) that map to different physical datacenters across accounts. This tool discovers the mapping for your account, which is useful for:
 
-## Using this tool
+* Optimizing data transfer costs during AWS DMS migrations
+* Ensuring resources are in the same physical datacenter across accounts
+* Planning multi-account architectures with latency requirements
 
-There are a small amount of prerequisites that must be completed prior to execution.
+## Prerequisites
 
-This tool has only been tested in a unix environment, specifically a WSL based unix environment.
+* Python 3.8 or higher
+* AWS CLI configured with credentials
+* IAM permissions required:
+  * `ec2:DescribeAvailabilityZones`
+  * `ec2:DescribeRegions`
+  * `sts:GetCallerIdentity`
 
-### Prerequisites
+## Installation
 
-#### Local environment
-
-* Python 3.x must be installed
-* AWS CLI must be installed
-* Run the command `make deps` to download the required Python dependencies that are not standard
-
-#### AWS requirements
-
-* You must have an AWS IAM Role set up prior in **every AWS account** you wish to map
-* This role must also be created and accessible in your **AWS management account** (if you wish to map it)
-* This role only requires the following permissions
+```bash
+make deps
 ```
-ec2:DescribeAvailabilityZones
-organizations:ListAccounts
-sts:AssumeRole
+
+Or manually:
+```bash
+pip install -r requirements.txt
 ```
-* If you are using AWS Control Tower, you can nominate the `AWSControlTowerExecution` IAM role
-  * **Note**: This role does not exist be default in the AWS management account.
 
-### Generating a map file
+## Usage
 
-* Via the AWS CLI/a terminal window - Login to your AWS **management account**
-* Ensure you are in this repositories main directory
-* Run the command `make map`
-* You will be prompted to select **all** of your AWS accounts to be mapped or your selections
-  * You must select at least one account or **all** otherwise the tool will exit
-* You will then be prompted to select which AWS regions you wish to map for each account
-  * You must select at least one region
-  * **Note**: You cannot select regions on a per account basis, if you wish to generate specific map information per account, run the tool for those accounts only
-* You will finally be prompted to provide the **role name** that the Availability Zone Mapper will assume into each account to gather the information
+### Basic usage - Map all regions
 
-### Runtime and output
+```bash
+python3 az_mapper.py
+```
 
-Upon beginning the map file generation, the following will occur;
+This will map all available AWS regions for your current account.
 
-* The tool will connect to an account and then map the logical availability zones to the physical availability zones for that region
-* It will then continue to do this for each region selected earlier for the current AWS account
-* Once this has completed it will continue onto the next AWS account until all AWS accounts have been processed
-* Once all AWS accounts have been processed the tool will produce a timestamped JSON file located in a folder called `outputs`
+### Map specific regions
 
-### Example output
+```bash
+python3 az_mapper.py --regions us-east-1 us-west-2
+```
 
-The following contains mapping for four (4) different AWS accounts for AWS regions `us-east-1` and `ap-southeast-2`.
+### Output as CSV instead of JSON
+
+```bash
+python3 az_mapper.py --format csv
+```
+
+### Specify output directory
+
+```bash
+python3 az_mapper.py --output-dir /path/to/output
+```
+
+### List available regions
+
+```bash
+python3 az_mapper.py --list-regions
+```
+
+### Combined example
+
+```bash
+python3 az_mapper.py --regions us-east-1 eu-west-1 --format csv --output-dir ./mappings
+```
+
+## Output
+
+The tool generates timestamped files in the specified output directory (default: `output/`):
+
+* JSON format: `aws-az-map-{account-id}-{timestamp}.json`
+* CSV format: `aws-az-map-{account-id}-{timestamp}.csv`
+
+### Example JSON output
 
 ```json
 {
-    "Accounts": [
-        {
-            "AccountId": "111111111111",
-            "Zones": {
-                "us-east-1": [
-                    {
-                        "us-east-1a": "use1-az1",
-                        "us-east-1b": "use1-az2",
-                        "us-east-1c": "use1-az4",
-                        "us-east-1d": "use1-az6",
-                        "us-east-1e": "use1-az3",
-                        "us-east-1f": "use1-az5"
-                    }
-                ],
-                "ap-southeast-2": [
-                    {
-                        "ap-southeast-2a": "apse2-az3",
-                        "ap-southeast-2b": "apse2-az1",
-                        "ap-southeast-2c": "apse2-az2"
-                    }
-                ]
-            }
-        },
-        {
-            "AccountId": "222222222222",
-            "Zones": {
-                "us-east-1": [
-                    {
-                        "us-east-1a": "use1-az4",
-                        "us-east-1b": "use1-az6",
-                        "us-east-1c": "use1-az1",
-                        "us-east-1d": "use1-az2",
-                        "us-east-1e": "use1-az3",
-                        "us-east-1f": "use1-az5"
-                    }
-                ],
-                "ap-southeast-2": [
-                    {
-                        "ap-southeast-2a": "apse2-az3",
-                        "ap-southeast-2b": "apse2-az1",
-                        "ap-southeast-2c": "apse2-az2"
-                    }
-                ]
-            }
-        },
-        {
-            "AccountId": "333333333333",
-            "Zones": {
-                "us-east-1": [
-                    {
-                        "us-east-1a": "use1-az4",
-                        "us-east-1b": "use1-az6",
-                        "us-east-1c": "use1-az1",
-                        "us-east-1d": "use1-az2",
-                        "us-east-1e": "use1-az3",
-                        "us-east-1f": "use1-az5"
-                    }
-                ],
-                "ap-southeast-2": [
-                    {
-                        "ap-southeast-2a": "apse2-az3",
-                        "ap-southeast-2b": "apse2-az1",
-                        "ap-southeast-2c": "apse2-az2"
-                    }
-                ]
-            }
-        },
-        {
-            "AccountId": "444444444444",
-            "Zones": {
-                "us-east-1": [
-                    {
-                        "us-east-1a": "use1-az4",
-                        "us-east-1b": "use1-az6",
-                        "us-east-1c": "use1-az1",
-                        "us-east-1d": "use1-az2",
-                        "us-east-1e": "use1-az3",
-                        "us-east-1f": "use1-az5"
-                    }
-                ],
-                "ap-southeast-2": [
-                    {
-                        "ap-southeast-2a": "apse2-az1",
-                        "ap-southeast-2b": "apse2-az3",
-                        "ap-southeast-2c": "apse2-az2"
-                    }
-                ]
-            }
-        }
-    ]
+  "AccountId": "123456789012",
+  "Zones": {
+    "us-east-1": {
+      "us-east-1a": "use1-az1",
+      "us-east-1b": "use1-az2",
+      "us-east-1c": "use1-az4",
+      "us-east-1d": "use1-az6",
+      "us-east-1e": "use1-az3",
+      "us-east-1f": "use1-az5"
+    },
+    "us-west-2": {
+      "us-west-2a": "usw2-az2",
+      "us-west-2b": "usw2-az1",
+      "us-west-2c": "usw2-az3",
+      "us-west-2d": "usw2-az4"
+    }
+  }
 }
+```
+
+### Example CSV output
+
+```csv
+AccountId,Region,LogicalAZ,PhysicalAZ
+123456789012,us-east-1,us-east-1a,use1-az1
+123456789012,us-east-1,us-east-1b,use1-az2
+123456789012,us-east-1,us-east-1c,use1-az4
+123456789012,us-west-2,us-west-2a,usw2-az2
+123456789012,us-west-2,us-west-2b,usw2-az1
 ```
 
 ## Feedback, improvements, issues
