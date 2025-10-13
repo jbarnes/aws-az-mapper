@@ -64,7 +64,7 @@ def get_default_regions():
     ]
 
 
-def az_map_regions(regions):
+def az_map_regions(regions, quiet=False):
     """Map the availability zones for the specified regions in current account."""
     account_id = get_current_account_id()
 
@@ -73,10 +73,12 @@ def az_map_regions(regions):
         "Zones": {}
     }
 
-    print(f"Mapping availability zones for account: {account_id}")
+    if not quiet:
+        print(f"Mapping availability zones for account: {account_id}")
 
     for region in regions:
-        print(f"  Processing region: {region}")
+        if not quiet:
+            print(f"  Processing region: {region}")
         zone_map["Zones"][region] = {}
 
         try:
@@ -86,10 +88,12 @@ def az_map_regions(regions):
             for zone in response["AvailabilityZones"]:
                 zone_map["Zones"][region][zone["ZoneName"]] = zone["ZoneId"]
 
-            print(f"    Found {len(zone_map['Zones'][region])} availability zones")
+            if not quiet:
+                print(f"    Found {len(zone_map['Zones'][region])} availability zones")
 
         except botocore.exceptions.ClientError as error:
-            print(f"    Error retrieving availability zones for {region}: {error}")
+            print(f"    Error retrieving availability zones for {region}: {error}",
+                  file=sys.stderr)
             zone_map["Zones"][region] = {}
 
     return zone_map
@@ -152,7 +156,32 @@ def parse_arguments():
         help="List all available AWS regions and exit"
     )
 
+    parser.add_argument(
+        "--stdout",
+        action="store_true",
+        help="Output to stdout instead of saving to a file"
+    )
+
+    parser.add_argument(
+        "--quiet",
+        "-q",
+        action="store_true",
+        help="Suppress informational output (only show errors)"
+    )
+
     return parser.parse_args()
+
+
+def output_to_stdout(map_data, format_type="json"):
+    """Output mapping data to stdout."""
+    if format_type == "json":
+        print(json.dumps(map_data, indent=2))
+    elif format_type == "csv":
+        print("AccountId,Region,LogicalAZ,PhysicalAZ")
+        account_id = map_data["AccountId"]
+        for region, zones in map_data["Zones"].items():
+            for logical_az, physical_az in zones.items():
+                print(f"{account_id},{region},{logical_az},{physical_az}")
 
 
 def main():
@@ -161,9 +190,11 @@ def main():
 
     # Handle list-regions flag
     if args.list_regions:
-        print("Fetching available AWS regions...")
+        if not args.quiet:
+            print("Fetching available AWS regions...")
         regions = get_available_regions()
-        print(f"\nAvailable regions ({len(regions)}):")
+        if not args.quiet:
+            print(f"\nAvailable regions ({len(regions)}):")
         for region in regions:
             print(f"  - {region}")
         sys.exit(0)
@@ -171,27 +202,37 @@ def main():
     # Determine which regions to map
     if args.regions:
         regions_to_map = args.regions
-        print(f"Mapping specified regions: {', '.join(regions_to_map)}")
+        if not args.quiet:
+            print(f"Mapping specified regions: {', '.join(regions_to_map)}")
     else:
-        print("No regions specified, fetching all available regions...")
+        if not args.quiet:
+            print("No regions specified, fetching all available regions...")
         regions_to_map = get_available_regions()
-        print(f"Will map {len(regions_to_map)} regions")
+        if not args.quiet:
+            print(f"Will map {len(regions_to_map)} regions")
 
     # Perform the mapping
-    print("\nStarting availability zone mapping...")
-    zone_map = az_map_regions(regions_to_map)
+    if not args.quiet:
+        print("\nStarting availability zone mapping...")
+    zone_map = az_map_regions(regions_to_map, quiet=args.quiet)
 
-    # Generate output file
-    print(f"\nGenerating {args.format.upper()} output file...")
-    output_file = create_output_file(zone_map, args.output_dir, args.format)
-    print(f"Success! Mapping saved to: {output_file}")
+    # Output results
+    if args.stdout:
+        output_to_stdout(zone_map, args.format)
+    else:
+        if not args.quiet:
+            print(f"\nGenerating {args.format.upper()} output file...")
+        output_file = create_output_file(zone_map, args.output_dir, args.format)
+        if not args.quiet:
+            print(f"Success! Mapping saved to: {output_file}")
 
-    # Print summary
-    total_azs = sum(len(zones) for zones in zone_map["Zones"].values())
-    print("\nSummary:")
-    print(f"  Account ID: {zone_map['AccountId']}")
-    print(f"  Regions mapped: {len(zone_map['Zones'])}")
-    print(f"  Total AZs found: {total_azs}")
+        # Print summary
+        total_azs = sum(len(zones) for zones in zone_map["Zones"].values())
+        if not args.quiet:
+            print("\nSummary:")
+            print(f"  Account ID: {zone_map['AccountId']}")
+            print(f"  Regions mapped: {len(zone_map['Zones'])}")
+            print(f"  Total AZs found: {total_azs}")
 
 
 if __name__ == "__main__":

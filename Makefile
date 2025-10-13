@@ -1,10 +1,12 @@
-.PHONY: deps install test lint clean
+.PHONY: deps install test lint clean help
 
 deps:
 	$(info [+] Installing required Python modules)
 	@pip install -r requirements.txt
 
-install: deps
+install:
+	$(info [+] Installing development dependencies)
+	@pip install -r requirements-dev.txt
 
 test:
 	$(info [+] Running tests)
@@ -20,3 +22,12 @@ clean:
 	@find . -type f -name "*.pyc" -delete
 	@find . -type f -name "*.pyo" -delete
 	@find . -type d -name "*.egg-info" -exec rm -rf {} + 2>/dev/null || true
+	@find . -type d -name ".pytest_cache" -exec rm -rf {} + 2>/dev/null || true
+
+help:
+	@echo "Available targets:"
+	@echo "  make install    - Install development dependencies"
+	@echo "  make deps       - Install production dependencies"
+	@echo "  make test       - Run tests"
+	@echo "  make lint       - Run pylint"
+	@echo "  make clean      - Remove Python artifacts and cache"

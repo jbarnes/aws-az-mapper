@@ -4,7 +4,8 @@ Maps AWS logical availability zones to physical zone IDs for the currently authe
 
 ## Code status
 
-![pylint status](https://github.com/jbarnes/az-mapper/actions/workflows/pylint.yml/badge.svg)
+![Tests](https://github.com/jbarnes/aws-az-mapper/actions/workflows/test.yml/badge.svg)
+![Pylint](https://github.com/jbarnes/aws-az-mapper/actions/workflows/pylint.yml/badge.svg)
 
 ## Overview
 
@@ -68,10 +69,33 @@ python3 az_mapper.py --output-dir /path/to/output
 python3 az_mapper.py --list-regions
 ```
 
-### Combined example
+### Output to stdout instead of file
 
 ```bash
+python3 az_mapper.py --regions us-east-1 --stdout
+```
+
+### Quiet mode (suppress informational output)
+
+```bash
+python3 az_mapper.py --quiet --stdout
+```
+
+### Combined examples
+
+Map specific regions and save as CSV:
+```bash
 python3 az_mapper.py --regions us-east-1 eu-west-1 --format csv --output-dir ./mappings
+```
+
+Pipe to jq for processing:
+```bash
+python3 az_mapper.py --regions us-east-1 --stdout --quiet | jq '.Zones'
+```
+
+Pipe to grep for specific AZ:
+```bash
+python3 az_mapper.py --stdout --format csv --quiet | grep "use1-az1"
 ```
 
 ## Output
@@ -114,6 +138,35 @@ AccountId,Region,LogicalAZ,PhysicalAZ
 123456789012,us-east-1,us-east-1c,use1-az4
 123456789012,us-west-2,us-west-2a,usw2-az2
 123456789012,us-west-2,us-west-2b,usw2-az1
+```
+
+## Development
+
+### Running Tests
+
+Install development dependencies:
+```bash
+make install
+```
+
+Run tests:
+```bash
+make test
+```
+
+Run linting:
+```bash
+make lint
+```
+
+### Test Structure
+
+Tests use `pytest` with mocked AWS API calls. No actual AWS credentials are required to run tests.
+
+```
+tests/
+├── __init__.py
+└── test_az_mapper.py    # Basic smoke tests
 ```
 
 ## Feedback, improvements, issues

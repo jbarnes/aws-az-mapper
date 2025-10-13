@@ -24,8 +24,11 @@ ENV/
 # Testing
 .pytest_cache/
 .coverage
+coverage.xml
 htmlcov/
 .tox/
+*.cover
+.hypothesis/
 
 # Distribution / packaging
 dist/

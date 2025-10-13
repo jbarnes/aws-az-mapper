@@ -1,0 +1,8 @@
+# Development dependencies
+-r requirements.txt
+
+# Testing
+pytest>=7.4.0
+
+# Linting
+pylint>=3.0.0
