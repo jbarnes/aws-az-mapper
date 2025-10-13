@@ -127,7 +127,8 @@ def parse_arguments():
         "--regions",
         "-r",
         nargs="+",
-        help="Specific regions to map (e.g., us-east-1 us-west-2). If not specified, maps all available regions."
+        help=("Specific regions to map (e.g., us-east-1 us-west-2). "
+              "If not specified, maps all available regions.")
     )
 
     parser.add_argument(
@@ -187,7 +188,7 @@ def main():
 
     # Print summary
     total_azs = sum(len(zones) for zones in zone_map["Zones"].values())
-    print(f"\nSummary:")
+    print("\nSummary:")
     print(f"  Account ID: {zone_map['AccountId']}")
     print(f"  Regions mapped: {len(zone_map['Zones'])}")
     print(f"  Total AZs found: {total_azs}")
