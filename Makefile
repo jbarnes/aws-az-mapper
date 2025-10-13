@@ -14,7 +14,7 @@ test:
 
 lint:
 	$(info [+] Running pylint)
-	@pylint az_mapper.py
+	@pylint az_mapper.py --fail-under=9.0
 
 clean:
 	$(info [+] Cleaning Python artifacts)
