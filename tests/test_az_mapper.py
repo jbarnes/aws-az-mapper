@@ -81,6 +81,9 @@ class TestBasicFunctionality:
         assert result['AccountId'] == '123456789012'
         assert 'us-east-1' in result['Zones']
         assert result['Zones']['us-east-1']['us-east-1a'] == 'use1-az1'
+        mock_ec2.describe_availability_zones.assert_called_with(
+            Filters=[{'Name': 'zone-type', 'Values': ['availability-zone']}]
+        )
 
 
 class TestFileOutput:

@@ -71,14 +71,19 @@ python3 az_mapper.py --list-regions
 
 ### Output to stdout instead of file
 
+Progress messages go to stderr, so stdout is clean for piping without needing `--quiet`:
+
 ```bash
-python3 az_mapper.py --regions us-east-1 --stdout
+python3 az_mapper.py --regions us-east-1 --stdout | jq '.Zones'
+python3 az_mapper.py --stdout --format csv | grep "use1-az1"
 ```
 
-### Quiet mode (suppress informational output)
+### Quiet mode (suppress all informational output)
+
+Use `--quiet` to suppress stderr progress messages entirely:
 
 ```bash
-python3 az_mapper.py --quiet --stdout
+python3 az_mapper.py --quiet --stdout | jq '.Zones'
 ```
 
 ### Combined examples
@@ -86,16 +91,6 @@ python3 az_mapper.py --quiet --stdout
 Map specific regions and save as CSV:
 ```bash
 python3 az_mapper.py --regions us-east-1 eu-west-1 --format csv --output-dir ./mappings
-```
-
-Pipe to jq for processing:
-```bash
-python3 az_mapper.py --regions us-east-1 --stdout --quiet | jq '.Zones'
-```
-
-Pipe to grep for specific AZ:
-```bash
-python3 az_mapper.py --stdout --format csv --quiet | grep "use1-az1"
 ```
 
 ## Output
@@ -174,3 +169,7 @@ tests/
 Please feel free to raise Pull Requests, Issues with identified problems or feedback.
 
 Thank you.
+
+---
+
+*This project was developed with assistance from [Claude Code](https://claude.ai/code).*

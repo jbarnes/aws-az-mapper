@@ -1,6 +1,9 @@
 # Output files
 output/
 
+# Claude Code
+CLAUDE.md
+
 # Python artifacts
 __pycache__/
 *.py[cod]
