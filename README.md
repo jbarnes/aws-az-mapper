@@ -17,7 +17,7 @@ AWS uses logical AZ names (like `us-east-1a`) that map to different physical dat
 
 ## Prerequisites
 
-* Python 3.8 or higher
+* Python 3.9 or higher
 * AWS CLI configured with credentials
 * IAM permissions required:
   * `ec2:DescribeAvailabilityZones`
@@ -172,4 +172,10 @@ Thank you.
 
 ---
 
-*This project was developed with assistance from [Claude Code](https://claude.ai/code).*
+## Development with Claude Code
+
+This project is developed with assistance from [Claude Code](https://claude.ai/code),
+Anthropic's agentic command-line tool. Claude Code is used throughout the workflow:
+authoring and refactoring the CLI, expanding the test suite, keeping the CI workflows
+consistent, and reviewing changes for correctness and cleanups before they land. The
+`.claude/` directory holds local Claude Code configuration for this repository.

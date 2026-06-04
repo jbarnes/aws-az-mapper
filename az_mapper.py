@@ -1,11 +1,14 @@
 """AWS Availability Zone mapping tool to map logical to physical zones."""
-from datetime import datetime
+from datetime import datetime, timezone
+import csv
 import os
 import json
 import sys
 import argparse
 import boto3
 import botocore
+
+CSV_HEADER = ["AccountId", "Region", "LogicalAZ", "PhysicalAZ"]
 
 
 def get_current_account_id():
@@ -27,6 +30,12 @@ def get_available_regions():
         return sorted([region["RegionName"] for region in response["Regions"]])
     except botocore.exceptions.ClientError as error:
         print(f"Error fetching regions: {error}", file=sys.stderr)
+        print(
+            "WARNING: falling back to a hardcoded region list. It may be stale and "
+            "may include regions this account cannot access; results could be "
+            "incomplete.",
+            file=sys.stderr,
+        )
         return get_default_regions()
 
 
@@ -103,16 +112,16 @@ def az_map_regions(regions, quiet=False):
 
 
 def _csv_rows(map_data):
-    """Yield formatted CSV data rows (no header) for the mapping data."""
+    """Yield CSV data rows (no header) as lists for the mapping data."""
     account_id = map_data["AccountId"]
     for region, zones in map_data["Zones"].items():
         for logical_az, physical_az in zones.items():
-            yield f"{account_id},{region},{logical_az},{physical_az}"
+            yield [account_id, region, logical_az, physical_az]
 
 
 def create_output_file(map_data, output_dir="output", format_type="json"):
     """Generate output files containing the mapping data."""
-    timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
     account_id = map_data["AccountId"]
 
     os.makedirs(output_dir, exist_ok=True)
@@ -123,10 +132,10 @@ def create_output_file(map_data, output_dir="output", format_type="json"):
             json.dump(map_data, file, indent=2)
     elif format_type == "csv":
         filename = f"{output_dir}/aws-az-map-{account_id}-{timestamp}.csv"
-        with open(filename, "w", encoding="utf8") as file:
-            file.write("AccountId,Region,LogicalAZ,PhysicalAZ\n")
-            for row in _csv_rows(map_data):
-                file.write(row + "\n")
+        with open(filename, "w", encoding="utf8", newline="") as file:
+            writer = csv.writer(file)
+            writer.writerow(CSV_HEADER)
+            writer.writerows(_csv_rows(map_data))
 
     return filename
 
@@ -187,9 +196,9 @@ def output_to_stdout(map_data, format_type="json"):
     if format_type == "json":
         print(json.dumps(map_data, indent=2))
     elif format_type == "csv":
-        print("AccountId,Region,LogicalAZ,PhysicalAZ")
-        for row in _csv_rows(map_data):
-            print(row)
+        writer = csv.writer(sys.stdout)
+        writer.writerow(CSV_HEADER)
+        writer.writerows(_csv_rows(map_data))
 
 
 def main():
