@@ -197,3 +197,75 @@ class TestStdoutOutput:
         captured = capsys.readouterr()
         assert 'AccountId,Region,LogicalAZ,PhysicalAZ' in captured.out
         assert '123456789012,us-east-1,us-east-1a,use1-az1' in captured.out
+
+    def test_csv_stdout_quotes_special_characters(self, capsys):
+        """Values containing a comma must be quoted, not split into columns."""
+        map_data = {
+            'AccountId': '123456789012',
+            'Zones': {'us-east-1': {'weird,az': 'use1-az1'}}
+        }
+
+        az_mapper.output_to_stdout(map_data, 'csv')
+
+        captured = capsys.readouterr()
+        assert '"weird,az"' in captured.out
+
+
+class TestMain:
+    """Integration-style tests for the main() entry point."""
+
+    def test_list_regions(self, monkeypatch, capsys):
+        """--list-regions prints regions to stdout and exits cleanly."""
+        monkeypatch.setattr('sys.argv', ['az_mapper.py', '--list-regions', '-q'])
+        monkeypatch.setattr(
+            az_mapper, 'get_available_regions',
+            lambda: ['us-east-1', 'us-west-2']
+        )
+
+        with pytest.raises(SystemExit) as exc:
+            az_mapper.main()
+
+        assert exc.value.code == 0
+        captured = capsys.readouterr()
+        assert 'us-east-1' in captured.out
+        assert 'us-west-2' in captured.out
+
+    def test_main_stdout(self, monkeypatch, capsys):
+        """main() with --stdout writes mapping data to stdout, not a file."""
+        monkeypatch.setattr(
+            'sys.argv',
+            ['az_mapper.py', '-r', 'us-east-1', '--stdout', '-q']
+        )
+        monkeypatch.setattr(
+            az_mapper, 'az_map_regions',
+            lambda regions, quiet=False: {
+                'AccountId': '123456789012',
+                'Zones': {'us-east-1': {'us-east-1a': 'use1-az1'}}
+            }
+        )
+
+        az_mapper.main()
+
+        captured = capsys.readouterr()
+        assert 'us-east-1a' in captured.out
+        assert 'use1-az1' in captured.out
+
+    def test_main_writes_file(self, monkeypatch, tmp_path, capsys):
+        """main() without --stdout writes an output file to the given directory."""
+        out_dir = tmp_path / 'out'
+        monkeypatch.setattr(
+            'sys.argv',
+            ['az_mapper.py', '-r', 'us-east-1', '-o', str(out_dir), '-q']
+        )
+        monkeypatch.setattr(
+            az_mapper, 'az_map_regions',
+            lambda regions, quiet=False: {
+                'AccountId': '123456789012',
+                'Zones': {'us-east-1': {'us-east-1a': 'use1-az1'}}
+            }
+        )
+
+        az_mapper.main()
+
+        files = list(out_dir.glob('aws-az-map-123456789012-*.json'))
+        assert len(files) == 1
