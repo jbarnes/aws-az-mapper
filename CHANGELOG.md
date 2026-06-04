@@ -19,8 +19,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   commas, quotes, or newlines are correctly quoted and escaped.
 - Output filename timestamps now use UTC for cross-machine consistency.
 - The pylint workflow is aligned with the test workflow: `checkout@v4`,
-  `setup-python@v5`, a Python 3.9-3.12 matrix, and `main`/pull-request triggers
+  `setup-python@v5`, a Python 3.9-3.14 matrix, and `main`/pull-request triggers
   only. `setup-python` was also bumped to v5 in the test workflow.
+- CI now tests against Python 3.13 and 3.14 in addition to 3.9-3.12.
 
 ### Removed
 - Support for end-of-life Python 3.8; the project now requires Python 3.9 or
